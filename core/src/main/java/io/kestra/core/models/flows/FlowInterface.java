@@ -39,6 +39,8 @@ public interface FlowInterface extends FlowId, SoftDeletable<FlowInterface>, Ten
 
     boolean isDeleted();
 
+    boolean isDraft();
+
     List<Label> getLabels();
 
     List<Input<?>> getInputs();
@@ -96,6 +98,7 @@ public interface FlowInterface extends FlowId, SoftDeletable<FlowInterface>, Ten
         return Objects.equals(this.uidWithoutRevision(), flow.uidWithoutRevision()) &&
             Objects.equals(this.isDeleted(), flow.isDeleted()) &&
             Objects.equals(this.isDisabled(), flow.isDisabled()) &&
+            Objects.equals(this.isDraft(), flow.isDraft()) &&
             Objects.equals(sourceWithoutRevision(this.getSource()), sourceWithoutRevision(flow.getSource()));
     }
 
