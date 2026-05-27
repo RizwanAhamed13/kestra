@@ -155,6 +155,7 @@
     import {useFlowStore} from "../../stores/flow"
     import {useToast} from "../../utils/toast"
     import {useFederatedModule} from "../../remoteComponents/useFederatedModule"
+    import {openFlowInNewTab} from "../../utils/openFlow"
     
     const router = useRouter()
 
@@ -421,32 +422,14 @@
     }
 
     const openFlow = (data: any) => {
-        if (data.link.executionId) {
-            window.open(
-                router.resolve({
-                    name: "executions/update",
-                    params: {
-                        namespace: data.link.namespace,
-                        flowId: data.link.id,
-                        tab: "topology",
-                        id: data.link.executionId,
-                    },
-                }).href,
-                "_blank",
-            )
-        } else {
-            window.open(
-                router.resolve({
-                    name: "flows/update",
-                    params: {
-                        namespace: data.link.namespace,
-                        id: data.link.id,
-                        tab: "overview",
-                    },
-                }).href,
-                "_blank",
-            )
-        }
+        openFlowInNewTab(
+            {
+                namespace: data.link.namespace,
+                flowId: data.link.id,
+                executionId: data.link.executionId,
+            },
+            router,
+        )
     }
 
     const showLogs = (event: string) => {
