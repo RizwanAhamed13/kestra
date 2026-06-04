@@ -20,7 +20,6 @@
                             columns: {shown: false}
                         }"
                         :defaultScope="false"
-                        defaultsOnlyWhenEmpty
                         @filter="onFilterRouteSync"
                     />
                     <QuickFilters
@@ -154,10 +153,6 @@
             ? localStorage.getItem("defaultLogLevel") || "INFO"
             : "INFO",
     )
-    // Did the user arrive with any filter already applied? Captured once at setup, before any
-    // default seeding/policy writes. Logs only seed defaults on a clean route; if filters are
-    // present we use them as-is (so the level default below is suppressed too).
-    const routeHadFiltersAtMount = Object.keys(route.query).some(key => key.startsWith("filters["))
     const {
         effectiveValue: effectiveLogLevel,
         syncFromAppliedFilters: syncLevelFromAppliedFilters,
@@ -166,7 +161,7 @@
         enabled: () => !props.filters && hasLevelFilterUI.value,
         explicitValue: () => props.logLevel ? {value: props.logLevel, direction: "min"} : undefined,
         defaultValue: () => ({value: defaultLogLevel.value, direction: "min"}),
-        applyDefaultIfMissing: () => !routeHadFiltersAtMount,
+        applyDefaultIfMissing: () => true,
         fallbackValue: () => undefined,
         readFromRoute: readRouteLevelFilter,
         writeToRoute: normalizeRouteLevelFilter,
@@ -185,9 +180,8 @@
             )
         },
     })
-    // Kind has no bespoke handling here: its NORMAL default is declared on the chip in logFilter.ts
-    // and seeded into the URL generically by the filter system's default mechanism, so it flows
-    // through `...routeFilters` like any other filter (and removing the chip drops it -> all kinds).
+    // Kind has no bespoke handling here: when no kind filter is in the URL the backend defaults to
+    // NORMAL only, and an explicit kind chip flows through `...routeFilters` like any other filter.
     const selectedTimeRange = computed(() => {
         if (route.query.timeRange) {
             return route.query.timeRange as string
@@ -225,12 +219,7 @@
         }
 
         if (!props.filters) {
-            const level = hasLevelFilterUI.value
-                ? (effectiveLogLevel.value
-                    ?? readRouteLevelFilter(route.query)
-                    ?? (routeHadFiltersAtMount ? undefined : {value: defaultLogLevel.value, direction: "min" as const}))
-                : effectiveLogLevel.value
-            queryFilter = normalizeRouteLevelFilter(queryFilter, level)
+            queryFilter = normalizeRouteLevelFilter(queryFilter, effectiveLogLevel.value)
         }
 
         return _merge(base, queryFilter)

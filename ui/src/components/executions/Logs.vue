@@ -189,7 +189,25 @@
 
     const executionsStore = useExecutionsStore()
 
-    const logExecutionsFilter = useLogExecutionsFilter(() => props.playground)
+    // The kind this execution's logs belong to, or undefined for NORMAL (the backend default).
+    const executionKind = computed<string | undefined>(() => {
+        const kind = props.playground
+            ? "PLAYGROUND"
+            : (executionsStore.execution as {kind?: string} | undefined)?.kind
+        return kind && kind !== "NORMAL" ? kind : undefined
+    })
+
+    // Per-execution log views default to NORMAL kind on the backend; surface this execution's own
+    // kind when it isn't NORMAL (e.g. PLAYGROUND) so its logs still load.
+    const kindParams = computed<Record<string, string>>(() => {
+        const params: Record<string, string> = {}
+        if (executionKind.value) {
+            params["filters[kind][IN]"] = executionKind.value
+        }
+        return params
+    })
+
+    const logExecutionsFilter = useLogExecutionsFilter(() => props.playground, () => executionKind.value)
     const defaultLogLevel = computed(
         () => localStorage.getItem("defaultLogLevel") || "INFO",
     )
@@ -265,7 +283,7 @@
         executionsStore.logs = {total: 0, results: []}
         executionsStore.followLogs({
             id: executionId.value!,
-            params: levelToRequestParams(effectiveLevelValue.value),
+            params: {...levelToRequestParams(effectiveLevelValue.value), ...kindParams.value},
         }).then((sse: EventSource) => {
             logsSSE.value = sse
             sse.onmessage = (event: MessageEvent) => {
@@ -411,7 +429,7 @@
         logsLoading.value = true
         executionsStore.loadLogs({
             executionId: executionId.value!,
-            params: levelToRequestParams(effectiveLevelValue.value),
+            params: {...levelToRequestParams(effectiveLevelValue.value), ...kindParams.value},
         }).finally(() => {
             logsLoading.value = false
         })
@@ -420,7 +438,7 @@
     function downloadContent() {
         executionsStore.downloadLogs({
             executionId: executionId.value!,
-            params: levelToRequestParams(effectiveLevelValue.value),
+            params: {...levelToRequestParams(effectiveLevelValue.value), ...kindParams.value},
         }).then((response: unknown) => {
             Utils.downloadUrl(window.URL.createObjectURL(new Blob([response as BlobPart])), downloadName.value)
         })
@@ -429,7 +447,7 @@
     function copyAllLogs() {
         executionsStore.downloadLogs({
             executionId: executionId.value!,
-            params: levelToRequestParams(effectiveLevelValue.value),
+            params: {...levelToRequestParams(effectiveLevelValue.value), ...kindParams.value},
         }).then((response: unknown) => {
             Utils.copy(response as string)
         })
