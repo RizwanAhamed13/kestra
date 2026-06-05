@@ -75,8 +75,10 @@
     import {KsExecutionStatus, cssVar} from "@kestra-io/design-system"
     import {Motion} from "motion-v"
     import {useI18n} from "vue-i18n"
+    import {useStateFilter} from "../../filter/composables/useStateFilter"
 
     const {t} = useI18n({useScope: "global"})
+    const {navigateToStateFilter} = useStateFilter()
 
     const props = defineProps({
         dashboardId: {type: String, required: false, default: undefined},
@@ -118,6 +120,8 @@
             return {
                 size: "small",
                 status: row[key].toString(),
+                clickable: true,
+                onClick: () => navigateToStateFilter(row[key].toString()),
             }
         case "DURATION":
             return {field: row[key], startDate: row["start_date"]}
