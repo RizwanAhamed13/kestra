@@ -152,7 +152,7 @@
                     placement="top"
                 >
                     <KsInput
-                        :modelValue="settings.envName"
+                        v-model="settings.envName"
                         @change="onEnvName"
                         :placeholder="$t('name')"
                         clearable
@@ -160,7 +160,7 @@
                 </KsTooltip>
                 <KsInput
                     v-else
-                    :modelValue="settings.envName"
+                    v-model="settings.envName"
                     @change="onEnvName"
                     :placeholder="$t('name')"
                     clearable
