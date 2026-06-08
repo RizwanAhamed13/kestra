@@ -1773,8 +1773,7 @@
     },
     "setup": {
       "login": "Login",
-      "login_title": "Sign in",
-      "login_subtitle": "Enter your credentials to access your Kestra instance",
+      "login_title": "Sign in to Kestra",
       "logout": "Logout",
       "troubleshooting": "Trouble signing in?",
       "steps": {

@@ -1742,7 +1742,6 @@
         "password_requirements": "Co najmniej 8 znaków, w tym 1 wielka litera i 1 cyfra."
       },
       "login": "Zaloguj się",
-      "login_subtitle": "Wprowadź swoje dane uwierzytelniające, aby uzyskać dostęp do instancji Kestra",
       "login_title": "Zaloguj się",
       "logout": "Wyloguj się",
       "steps": {
