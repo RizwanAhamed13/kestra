@@ -1366,14 +1366,15 @@ public class ExecutorService {
 
                 // don't update output asserts if task fail
                 if (!taskRun.getState().isFailed()) {
-                    taskRun.getAssets().getOutputs().forEach(asset ->
-                    {
+                    // plain for-loop (not forEach) so a checked InternalException from asyncUpsert
+                    // propagates out of addWorkerTaskResult and fails the execution
+                    for (var asset : taskRun.getAssets().getOutputs()) {
                         try {
                             assetService.asyncUpsert(assetUser, asset);
                         } catch (QueueException e) {
                             log.warn("Unable to submit asset upsert event for asset {}", asset.getId(), e);
                         }
-                    });
+                    }
                 }
             }
         }
