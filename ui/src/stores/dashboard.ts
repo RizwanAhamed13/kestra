@@ -38,6 +38,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
     }>()
     const chartErrors = ref<string[]>([])
     const isCreating = ref<boolean>(false)
+    const readonlyToastShown = ref(false)
 
     const sourceCode = ref("")
     const sourceCodeOrigin = ref("")
@@ -189,6 +190,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
         activeDashboard.value = res.data
         sourceCode.value = res.data.sourceCode ?? ""
         sourceCodeOrigin.value = sourceCode.value
+        readonlyToastShown.value = false
 
         return activeDashboard.value
     }
@@ -335,10 +337,13 @@ export const useDashboardStore = defineStore("dashboard", () => {
         }
 
         if (!isCreating.value && dbId !== undefined && YAML_UTILS.parse(sourceCode.value).id !== dbId) {
-            coreStore.message = {
-                variant: "error",
-                title: t("readonly property"),
-                message: t("dashboards.edition.id readonly"),
+            if (!readonlyToastShown.value) {
+                readonlyToastShown.value = true
+                coreStore.message = {
+                    variant: "warning",
+                    title: t("readonly property"),
+                    message: t("dashboards.edition.id readonly"),
+                }
             }
 
             await nextTick()

@@ -109,6 +109,7 @@ export const useFlowStore = defineStore("flow", () => {
     const openAiCopilot = ref<boolean>(false)
     const lastSaveFlow = ref<string>()
     const isCreating = ref<boolean>(false)
+    const readonlyToastShown = ref(false)
     const flowYaml = ref<string>("")
     const flowYamlOrigin = ref<string>("")
     const expandedSubflows = ref<string[]>([])
@@ -220,10 +221,13 @@ export const useFlowStore = defineStore("flow", () => {
                         (flowOnValidation.id !== flowBeforeEdit.id ||
                             flowOnValidation.namespace !== flowBeforeEdit.namespace)) {
 
-                    coreStore.message = {
-                        variant: "error",
-                        title: t("readonly property"),
-                        message: t("namespace and id readonly"),
+                    if (!readonlyToastShown.value) {
+                        readonlyToastShown.value = true
+                        coreStore.message = {
+                            variant: "warning",
+                            title: t("readonly property"),
+                            message: t("namespace and id readonly"),
+                        }
                     }
                     flowYaml.value = YAML_UTILS.replaceIdAndNamespace(
                         source,
@@ -453,6 +457,7 @@ export const useFlowStore = defineStore("flow", () => {
         flow.value = response.data
         flowYaml.value = response.data.source
         flowYamlOrigin.value = response.data.source
+        readonlyToastShown.value = false
         overallTotal.value = 1
 
         return response.data
