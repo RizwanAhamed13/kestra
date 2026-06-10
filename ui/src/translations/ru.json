@@ -1,5 +1,10 @@
 {
   "ru": {
+    "back": "Назад",
+    "next": "Далее",
+    "done": "Готово",
+    "review your inputs": "Проверьте введённые данные",
+    "loading": "Загрузка…",
     "Add flow": "Добавить flow",
     "Default log level": "Уровень log по умолчанию",
     "Default namespace": "Namespace по умолчанию",

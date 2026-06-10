@@ -1,5 +1,10 @@
 {
   "fr": {
+    "back": "Retour",
+    "next": "Suivant",
+    "done": "Terminé",
+    "review your inputs": "Vérifiez vos entrées",
+    "loading": "Chargement…",
     "Add flow": "Ajouter un flow",
     "Default log level": "Niveau de log par défaut",
     "Default namespace": "Espace de nom par défaut",

@@ -1,5 +1,10 @@
 {
   "it": {
+    "back": "Indietro",
+    "next": "Avanti",
+    "done": "Fatto",
+    "review your inputs": "Rivedi i tuoi input",
+    "loading": "Caricamento…",
     "Add flow": "Aggiungi flow",
     "Default log level": "Livello di log predefinito",
     "Default namespace": "Namespace predefinito",
