@@ -32,6 +32,9 @@
                 v-model="inputsValues[input.id]"
                 @update:model-value="onChange(input)"
                 :allowCreate="input.allowCustomValue"
+                :disabled="isComputingInput(input.id)"
+                :placeholder="isComputingInput(input.id) ? t('loading') : undefined"
+                :loading="isLoadingInput(input.id)"
                 filterable
                 clearable
             >
@@ -70,6 +73,9 @@
                 filterable
                 clearable
                 :allowCreate="input.allowCustomValue"
+                :disabled="isComputingInput(input.id)"
+                :placeholder="isComputingInput(input.id) ? t('loading') : undefined"
+                :loading="isLoadingInput(input.id)"
             >
                 <KsOption
                     v-for="item in ((input.values ?? input.options) ?? []).map(toOption)"
@@ -290,6 +296,10 @@
         allowedFileExtensions?: string[];
         accept?: string;
         prefill?: unknown;
+        // present only on the raw flow inputs (props.initialInputs); the rendered
+        // validate response strips `expression`, keeping `dependsOn` at most
+        expression?: string;
+        dependsOn?: unknown;
     }
 
     function toOption(item: ValueOptionLike): {label: string; value: string} {
@@ -358,6 +368,15 @@
     const inputsValidated = ref<Set<string>>(new Set())
     const editingArrayId = ref<string | null>(null)
     const editableItems = reactive<Record<string, string[]>>({})
+    // true while an input-rendering call (which may run a subflow() function) is in flight
+    const isComputingValues = ref(false)
+    // true once the first validate call has completed; the per-input loader only shows on this
+    // initial fetch, so later recomputations (e.g. on a dependsOn change) don't disable the input
+    const hasValidatedOnce = ref(false)
+    // bumped on every user input change; a validate response built before the latest change is stale
+    // and must be discarded, otherwise it would reset a value the user just picked (e.g. while a slow
+    // subflow() render is still in flight)
+    let inputGeneration = 0
 
     // Icons exposed to template (markRaw to avoid reactivity overhead)
     const DeleteOutline = markRaw(DeleteOutlineIcon) as Component
@@ -377,6 +396,30 @@
                 .flatMap(it => it.errors?.flatMap(err => err.message) ?? [])
             : null
     })
+
+    // Inputs whose `values` are rendered dynamically (e.g. via the subflow() function).
+    // Derived from the raw flow inputs because the validate response strips `expression`.
+    const dynamicInputIds = computed(() =>
+        new Set((props.initialInputs ?? []).filter(it => it.expression || it.dependsOn).map(it => it.id)),
+    )
+
+    // True while a dynamic input's values are being (re)computed. Drives the loading spinner so the
+    // user knows the available values may change — on the initial fetch AND on later recomputations.
+    function isLoadingInput(id: string): boolean {
+        return isComputingValues.value && dynamicInputIds.value.has(id)
+    }
+
+    // True only on the initial fetch, while a dynamic input still has no value. Drives the disabled
+    // state + "computing" placeholder: once a value is present (or after the first fetch) the input
+    // stays usable and keeps its value while any later recomputation runs in the background.
+    function isComputingInput(id: string): boolean {
+        if (hasValidatedOnce.value || !isLoadingInput(id)) {
+            return false
+        }
+        const value = inputsValues[id] ?? multiSelectInputs[id]
+        return value === undefined || value === null || value === ""
+            || (Array.isArray(value) && value.length === 0)
+    }
 
     // Methods
     function normalizeJSON(value: string): unknown {
@@ -430,6 +473,8 @@
     }
 
     function onChange(input: InputMetaData): void {
+        // mark inputs as changed so any in-flight (older) validate response is discarded as stale
+        inputGeneration++
         // give 2 seconds for the user to finish their edit
         // and for the server to return with validated content
         setTimeout(() => {
@@ -536,7 +581,14 @@
 
         const formData = inputsToFormData({$moment: moment}, inputsMetaData.value, inputsValuesNoDefault)
 
+        // generation this request was built at; if the user changes an input before the response
+        // lands, the response is stale and applying it would clobber the user's new value
+        const requestGeneration = inputGeneration
+
         const metadataCallback = (response: ValidationResponse): void => {
+            if (requestGeneration !== inputGeneration) {
+                return
+            }
             emit("update:checks", response.checks || [])
             inputsMetaData.value = response.inputs.reduce((acc: InputMetaData[], it) => {
                 if (it.enabled) {
@@ -552,24 +604,33 @@
             updateDefaults()
         }
 
-        if (props.flow !== undefined) {
-            const options = {namespace: props.flow.namespace, id: props.flow.id}
-            const {data} = await executionsStore.validateExecution({...options, formData})
+        // Dynamic inputs (e.g. values rendered via the subflow() function) are disabled and show a
+        // "computing" placeholder while this render call is in flight — regardless of its duration.
+        isComputingValues.value = true
 
-            metadataCallback(data)
-        } else if (props.execution !== undefined) {
-            const options = {id: props.execution.id}
-            const {data} = await executionsStore.validateResume({...options, formData})
+        try {
+            if (props.flow !== undefined) {
+                const options = {namespace: props.flow.namespace, id: props.flow.id}
+                const {data} = await executionsStore.validateExecution({...options, formData})
 
-            metadataCallback(data)
-        } else {
-            emit("validation", {
-                formData: formData,
-                inputsMetaData: inputsMetaData.value,
-                callback: (response: ValidationResponse) => {
-                    metadataCallback(response)
-                },
-            })
+                metadataCallback(data)
+            } else if (props.execution !== undefined) {
+                const options = {id: props.execution.id}
+                const {data} = await executionsStore.validateResume({...options, formData})
+
+                metadataCallback(data)
+            } else {
+                emit("validation", {
+                    formData: formData,
+                    inputsMetaData: inputsMetaData.value,
+                    callback: (response: ValidationResponse) => {
+                        metadataCallback(response)
+                    },
+                })
+            }
+        } finally {
+            isComputingValues.value = false
+            hasValidatedOnce.value = true
         }
     }
 
@@ -700,6 +761,17 @@
         Object.assign(inputsValues, toRaw(props.selectedTrigger.inputs))
     }
 
+    // Apply defaults from the raw inputs immediately so static inputs show their default value
+    // without waiting for the initial validate call (which may be slow, e.g. a subflow() render).
+    // Mark not-yet-provided inputs as default first so they stay excluded from the validate request,
+    // matching the post-validate path (inputsValuesWithNoDefault keys off isDefault).
+    inputsMetaData.value.forEach((input) => {
+        if (inputsValues[input.id] === undefined) {
+            input.isDefault = true
+        }
+    })
+    updateDefaults()
+
     // Run initial validation and setup watcher
     validateInputs().then(() => {
         watch(
@@ -764,6 +836,10 @@
         validateInputs,
         inputsValues,
         inputsMetaData,
+        isComputingValues,
+        isComputingInput,
+        isLoadingInput,
+        onChange,
     })
 </script>
 
