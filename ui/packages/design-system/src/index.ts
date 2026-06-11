@@ -89,7 +89,6 @@ import KsSteps from "./components/Navigation/KsSteps/KsSteps.vue"
 import KsSwitch from "./components/Form/KsSwitch.vue"
 import KsTabPane from "./components/Navigation/KsTabs/KsTabPane.vue"
 import KsTabs from "./components/Navigation/KsTabs/KsTabs.vue"
-import KsRouterTab from "./components/Navigation/KsTabs/KsRouterTab.vue"
 import KsTabsToggle from "./components/Navigation/KsTabs/KsTabsToggle.vue"
 import KsTable from "./components/Data/KsTable/KsTable.vue"
 import KsTableColumn from "./components/Data/KsTable/KsTableColumn.vue"
@@ -131,7 +130,6 @@ export {SECTIONS, CLUSTER_PREFIX} from "./utils/constants"
 export {setMomentInstance, setDateFormatter} from "./date/index"
 export type {KsChartSeriesItem} from "./components/Charts/KsEchart.vue"
 export type {KsGraphNode, KsGraphEdge} from "./components/Charts/KsGraph.vue"
-export type {RouterTab} from "./components/Navigation/KsTabs/KsRouterTab.vue"
 export type {KsBreadcrumbItem} from "./components/Navigation/KsBreadcrumb/types"
 export {Comparators} from "./components/Data/KsDataTable/filter/utils/filterTypes"
 export type {InputInstance, FormItemRule, FormRules, FormInstance} from "element-plus"
@@ -281,7 +279,6 @@ const components: Record<string, Component> = {
     KsSwitch,
     KsTabPane,
     KsTabs,
-    KsRouterTab,
     KsTabsToggle,
     KsTable,
     KsTableColumn,
@@ -388,7 +385,6 @@ export {
     KsSwitch,
     KsTabPane,
     KsTabs,
-    KsRouterTab,
     KsTabsToggle,
     KsTable,
     KsTableColumn,
@@ -514,7 +510,6 @@ declare module "vue" {
         KsSwitch: typeof KsSwitch
         KsTabPane: typeof KsTabPane
         KsTabs: typeof KsTabs
-        KsRouterTab: typeof KsRouterTab
         KsTabsToggle: typeof KsTabsToggle
         KsTable: typeof KsTable
         KsTableColumn: typeof KsTableColumn

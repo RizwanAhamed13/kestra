@@ -140,7 +140,6 @@
                                                 :taskRun="item.task"
                                                 :execution="execution"
                                                 :flow="executionsStore.flow"
-                                                @follow="emit('follow', $event)"
                                             />
                                         </div>
                                     </div>
@@ -152,7 +151,6 @@
                                                     :excludeMetas="['namespace', 'flowId', 'taskId', 'executionId']"
                                                     :levelFilter="effectiveSelectedLogLevel"
                                                     hideTaskHeader
-                                                    @follow="emit('follow', $event)"
                                                     :targetFlow="executionsStore.flow"
                                                     class="mh-100 mx-3"
                                                 />
@@ -272,11 +270,6 @@
         namespace: undefined,
         embed: true,
     })
-
-    const emit = defineEmits<{
-        follow: [event: unknown];
-        goToDetail: [event: unknown];
-    }>()
 
     const {t} = useI18n()
     const route = useRoute()

@@ -46,7 +46,7 @@
             </KsFormItem>
             <KsFormItem>
                 <KsButtonGroup class="ks-b-group">
-                    <Restart v-if="executionsStore.execution" :execution="executionsStore.execution" @follow="emit('follow', $event)" />
+                    <Restart v-if="executionsStore.execution" :execution="executionsStore.execution" />
                     <KsIconButton :tooltip="t('download logs')" @click="downloadContent()">
                         <Download />
                     </KsIconButton>
@@ -69,7 +69,6 @@
             :levelToHighlight="cursorLogLevel"
             @log-cursor="logCursor = $event"
             :logCursor="logCursor"
-            @follow="emit('follow', $event)"
             @opened-taskruns-count="openedTaskrunsCount = $event"
             @log-indices-by-level="Object.entries($event).forEach(([levelName, indices]) => logIndicesByLevel[levelName] = indices)"
             :targetFlow="executionsStore.flow"
@@ -175,10 +174,6 @@
     }
 
     const {t} = useI18n()
-
-    const emit = defineEmits<{
-        follow: [event: unknown]
-    }>()
 
     const executionsStore = useExecutionsStore()
 

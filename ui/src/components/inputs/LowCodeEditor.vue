@@ -440,11 +440,10 @@
         if (data.link.executionId) {
             window.open(
                 router.resolve({
-                    name: "executions/update",
+                    name: "executions/update/overview",
                     params: {
                         namespace: data.link.namespace,
                         flowId: data.link.id,
-                        tab: "overview",
                         id: data.link.executionId,
                     },
                 }).href,

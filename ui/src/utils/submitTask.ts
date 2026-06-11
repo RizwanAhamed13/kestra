@@ -71,12 +71,11 @@ export const executeTask = (
             if (options.redirect) {
                 if (options.newTab) {
                     const resolved = submitor.$router.resolve({
-                        name: "executions/update",
+                        name: `executions/update/${localStorage.getItem("executeDefaultTab") || "gantt"}`,
                         params: {
                             namespace: response.data.namespace,
                             flowId: response.data.flowId,
                             id: response.data.id,
-                            tab: localStorage.getItem("executeDefaultTab") || "gantt",
                             tenant: submitor.$route.params.tenant,
                         },
                         query: options.query,
