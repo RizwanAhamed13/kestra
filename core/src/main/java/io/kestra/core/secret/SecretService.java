@@ -2,6 +2,7 @@ package io.kestra.core.secret;
 
 import java.io.IOException;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -10,8 +11,13 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.Strings;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.kestra.core.models.QueryFilter;
 import io.kestra.core.repositories.ArrayListTotal;
+import io.kestra.core.serializers.JacksonMapper;
 
 import io.micronaut.data.model.Pageable;
 import jakarta.annotation.PostConstruct;
@@ -22,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SecretService<META> {
     private static final String SECRET_PREFIX = "SECRET_";
+    private static final ObjectMapper OBJECT_MAPPER = JacksonMapper.ofJson();
 
     private Map<String, String> decodedSecrets;
 
@@ -55,6 +62,43 @@ public class SecretService<META> {
             throw new SecretNotFoundException("Cannot find secret for key '" + key + "'.");
         }
         return secret;
+    }
+
+    /**
+     * Finds the secret for the given key and returns it as a map of fields.
+     * <p>
+     * The default implementation parses the secret value as a JSON object. Secret managers
+     * with natively structured secrets can return their fields directly.
+     *
+     * @throws SecretNotFoundException if no secret exists for the given key.
+     * @throws SecretException if the secret value is not a JSON object.
+     */
+    public Map<String, String> findSecretAsMap(String tenantId, String namespace, String key) throws SecretNotFoundException, IOException {
+        return parseSecretObject(key, findSecret(tenantId, namespace, key));
+    }
+
+    /**
+     * Parses a secret value as a JSON object and returns its top-level entries.
+     * Non-scalar entry values are kept as their JSON representation.
+     *
+     * @throws SecretException if the value is not a JSON object.
+     */
+    public static Map<String, String> parseSecretObject(String key, String value) {
+        JsonNode node;
+        try {
+            node = OBJECT_MAPPER.readTree(value);
+        } catch (JsonProcessingException e) {
+            throw new SecretException("Secret '" + key + "' does not contain a valid JSON object value.");
+        }
+        if (!node.isObject()) {
+            throw new SecretException("Secret '" + key + "' does not contain a valid JSON object value.");
+        }
+        Map<String, String> result = new LinkedHashMap<>();
+        node.properties().forEach(entry -> result.put(
+            entry.getKey(),
+            entry.getValue().isValueNode() ? entry.getValue().asText() : entry.getValue().toString()
+        ));
+        return result;
     }
 
     public ArrayListTotal<META> list(Pageable pageable, String tenantId, List<QueryFilter> filters) throws IOException {

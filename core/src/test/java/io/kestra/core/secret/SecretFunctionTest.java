@@ -117,6 +117,51 @@ public class SecretFunctionTest {
     }
 
     @Test
+    void shouldGetSecretAsMapGivenFull() throws IllegalVariableEvaluationException {
+        // Given
+        Map<String, Object> context = Map.of(
+            "flow", Map.of("namespace", "io.kestra.unittest")
+        );
+
+        // When / Then
+        assertThat(variableRenderer.render("{{ secret('json-secret', full=true).string }}", context)).isEqualTo("value");
+        assertThat(variableRenderer.render("{{ secret('json-secret', full=true).number }}", context)).isEqualTo("42");
+        assertThat(variableRenderer.render("{{ secret('json-secret', full=true).object }}", context)).isEqualTo("{\"f1\":\"value1\",\"f2\":\"value2\"}");
+    }
+
+    @Test
+    void shouldFailedGivenFullOnNonObjectSecret() {
+        // Given
+        Map<String, Object> context = Map.of(
+            "flow", Map.of("namespace", "io.kestra.unittest")
+        );
+
+        // When / Then
+        Throwable cause = Assertions.assertThrows(IllegalVariableEvaluationException.class, () ->
+        {
+            variableRenderer.render("{{ secret('string-secret', full=true) }}", context);
+        }).getCause();
+        assertThat(cause.getMessage())
+            .isEqualTo("Secret 'string-secret' does not contain a valid JSON object value. ({{ secret('string-secret', full=true) }}:1)");
+    }
+
+    @Test
+    void shouldFailedGivenBothSubKeyAndFull() {
+        // Given
+        Map<String, Object> context = Map.of(
+            "flow", Map.of("namespace", "io.kestra.unittest")
+        );
+
+        // When / Then
+        Throwable cause = Assertions.assertThrows(IllegalVariableEvaluationException.class, () ->
+        {
+            variableRenderer.render("{{ secret('json-secret', subkey='string', full=true) }}", context);
+        }).getCause();
+        assertThat(cause.getMessage())
+            .isEqualTo("The 'secret' function cannot be called with both 'subkey' and 'full' arguments. ({{ secret('json-secret', subkey='string', full=true) }}:1)");
+    }
+
+    @Test
     void getUnknownSecret() {
         var exception = assertThrows(SecretNotFoundException.class, () -> secretService.findSecret(null, null, "unknown_secret_key"));
         assertThat(exception.getMessage()).isEqualTo("Cannot find secret for key 'unknown_secret_key'.");
