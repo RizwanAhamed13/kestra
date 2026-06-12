@@ -190,7 +190,7 @@
                                 {{ $t("restart") }}
                             </KsDropdownItem>
                             <KsDropdownItem
-                                v-if="userCan(action.UNLOCK)"
+                                v-if="userCan(action.UNLOCK) && scope.row.kind !== 'REALTIME'"
                                 :disabled="!scope.row.locked"
                                 @click="unlock(scope.row)"
                             >
